@@ -13,4 +13,3 @@ public:
 
 bus unitize(int n, int N);
 double frame_power(frame f);
-

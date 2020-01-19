@@ -3,14 +3,11 @@
 #include <ccomplex>
 #include <cmath>
 #include <complex>
-#include <cstring>
 #include <iostream>
-#include <set>
 #include <string>
 #include <vector>
 
 #include <eigen3/Eigen/Dense>
-#include <fftw3.h>
 
 #define SAMPLE_RATE 16000 // Hz
 #define FRAME_DURATION 10 // ms
@@ -59,7 +56,6 @@ public:
   frame apply_siso(frame f) { return apply(bus({f}))[0]; }
 };
 
-
 class overlap {
   frame in, out;
   
@@ -69,68 +65,3 @@ public:
   bus apply(bus b);
 };
 
-class fft : public systm {
-  int K;
-  fftw_complex *in, *out;
-  fftw_plan p;
-
-public:
-  fft(int K);
-  ~fft();
-  bus apply(bus b);
-};
-
-class ifft : public systm {
-  int K;
-  fftw_complex *in, *out;
-  fftw_plan p;
-
-public:
-  ifft(int K);
-  ~ifft();
-  bus apply(bus B);
-};
-
-/*
- * Type II (Makhoul, N, no padding)
- */
-class dct : public systm {
-  int K;
-  VectorXcd cplx;
-  fft dft;
-  
-public:
-  dct(int K);
-  bus apply(bus b);
-};
-
-/*
- * Obtains mel coefficients from the frame.
- * Takes fft of frame, then applies mel filterbank to it.
- */ 
-class mel : public systm {
-  int K; // fft width. If its power of 2 it will be bigger than frame
-  fft dft;
-  int cbin[25]; // fft bin indices where each filter channel is centered
-
-public:
-  mel(int K);
-  bus apply(bus b);
-};
-
-class cepstrum : public systm {
-  mel fb;
-  dct tr;
-
-public:
-  cepstrum(int K);
-  bus apply(bus b);
-};
-
-class haar_dwt : public systm {
-  int N;
-
-public:
-  haar_dwt(int N);
-  bus apply(bus b);
-};

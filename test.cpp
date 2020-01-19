@@ -1,29 +1,37 @@
-#include "dsp_core.hpp"
-#include "supersystem.hpp"
-#include "scope.hpp"
-#include "sink.hpp"
-#include "source.hpp"
+#include <csignal>
+#include <iostream>
+
+#include <audiotk/audiotk.hpp>
+
+using namespace std;
+
+sig_atomic_t sgnl = 0;
+void handle(int sig) { sgnl = sig; }
 
 int main(int argc, char **argv) {
+  signal(SIGINT, handle);
+  
   glfwInit();
+
+  pa_source in;
+  int N_wt = 8;
+  fwt wt(N_wt, 256, "D4");
+  multiscope scope1(1024, 768,
+		    wt.sizes(),
+		    vector<double>(N_wt, -0.5),
+		    vector<double>(N_wt, 0.5));
+  ifwt iwt(N_wt, 256, "D4");
+  pa_sink out;
+
+  stopwatch st;
+  while (sgnl != SIGINT) {
+    bus b = in.apply({});
+    bus b_ = wt.apply(b);
+    scope1.apply(b_);
+    b = iwt.apply(b_);
+    out.apply(b);
+  }
   
-  supersystem dash;
-  
-  dash.append_sys("in", new pa_source());
-  dash.append_sys("cepstrum", new cepstrum(256));
-  dash.append_sys("scope", new waterfall(24, 100, 480, 480, 0.0, 1.0));
-  dash.append_sys("out", new pa_sink());
-
-  dash.link_node("cepstrum", "in", 0);
-  dash.link_node("scope", "cepstrum", 0);
-  dash.link_node("out", "in", 0);
-
-  dash.append_sink("scope");
-  dash.append_sink("out");
-
-  for (int i = 0; i > -1; i++)
-    dash.apply({});
-
   glfwTerminate();
   return 0;
 }
